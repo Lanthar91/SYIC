@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SYCBox</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>SYCBox</h1>
+
+  <!-- Кнопки выбора ROM -->
+  <div id="romMenu"></div>
+
+  <button id="fullscreenBtn">Fullscreen</button>
+  <canvas id="screen" width="256" height="240"></canvas>
+
+  <script src="node_modules/jsnes/dist/jsnes.js"></script>
+  <script>
+    const canvas = document.getElementById("screen");
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    let romLoaded = false;
+    const nes = new jsnes.NES({
+      onFrame(frameBuffer) {
+        const imageData = context.getImageData(0, 0, 256, 240);
+        for (let i = 0; i < frameBuffer.length; i++) {
+          imageData.data[i * 4] = frameBuffer[i] & 0xFF;
+          imageData.data[i * 4 + 1] = (frameBuffer[i] >> 8) & 0xFF;
+          imageData.data[i * 4 + 2] = (frameBuffer[i] >> 16) & 0xFF;
+          imageData.data[i * 4 + 3] = 0xFF;
+        }
+        context.putImageData(imageData, 0, 0);
+      },
+      onAudioSample(left) {
+        audioBuffer.push(left);
+      },
+      onStatusUpdate: console.log
+    });
+
+    function loadROM(buffer) {
+      nes.loadROM(buffer);
+      romLoaded = true;
+      requestAnimationFrame(frameLoop);
+    }
+
+const FPS = 60;
+const interval = 1000 / FPS;
+let lastTime = performance.now();
+
+function frameLoop(currentTime) {
+  const elapsed = currentTime - lastTime;
+
+  if (elapsed >= interval) {
+    if (romLoaded) nes.frame();
+    lastTime = currentTime - (elapsed % interval);
+  }
+
+  requestAnimationFrame(frameLoop);
+}
+
+
+    document.getElementById("fullscreenBtn").onclick = () => canvas.requestFullscreen();
+
+    // Аудио
+    let audioContext, scriptNode;
+    const audioBuffer = [];
+
+    function initAudio() {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      scriptNode = audioContext.createScriptProcessor(2048, 0, 1);
+      scriptNode.onaudioprocess = event => {
+        const output = event.outputBuffer.getChannelData(0);
+        if (audioBuffer.length >= 2048) {
+          for (let i = 0; i < 2048; i++) output[i] = audioBuffer.shift();
+        }
+      };
+      scriptNode.connect(audioContext.destination);
+    }
+
+    document.onclick = () => {
+      if (!audioContext) initAudio();
+      audioContext.resume();
+    };
+
+    // Создаём меню выбора ROM
+    const romFiles = ["mario.nes", "contra.nes", "battletoads.nes"]; // добавляй сюда файлы
+    const romMenu = document.getElementById("romMenu");
+
+    romFiles.forEach(filename => {
+      const button = document.createElement("button");
+      button.textContent = filename.replace(".nes", "");
+      button.onclick = () => {
+        fetch(`roms/${filename}`)
+          .then(response => response.arrayBuffer())
+          .then(arrayBuffer => {
+            const binaryString = String.fromCharCode(...new Uint8Array(arrayBuffer));
+            loadROM(binaryString);
+          });
+      };
+      romMenu.appendChild(button);
+    });
+
+    // Управление с клавиатуры, геймпада и ТВ (оставляем как есть, уже настроено)
+    const BUTTONS = jsnes.Controller;
+    const KEY_MAP = {
+      38: BUTTONS.BUTTON_UP, 40: BUTTONS.BUTTON_DOWN,
+      37: BUTTONS.BUTTON_LEFT, 39: BUTTONS.BUTTON_RIGHT,
+      90: BUTTONS.BUTTON_A, 88: BUTTONS.BUTTON_B,
+      13: BUTTONS.BUTTON_START, 16: BUTTONS.BUTTON_SELECT,
+      461: BUTTONS.BUTTON_B, 415: BUTTONS.BUTTON_START,
+    };
+
+    window.addEventListener("keydown", event => {
+      const key = KEY_MAP[event.keyCode];
+      if (key !== undefined) nes.buttonDown(1, key);
+    });
+
+    window.addEventListener("keyup", event => {
+      const key = KEY_MAP[event.keyCode];
+      if (key !== undefined) nes.buttonUp(1, key);
+    });
+
+    const GAMEPAD_MAP = {
+      12: BUTTONS.BUTTON_UP, 13: BUTTONS.BUTTON_DOWN,
+      14: BUTTONS.BUTTON_LEFT, 15: BUTTONS.BUTTON_RIGHT,
+      0: BUTTONS.BUTTON_A, 1: BUTTONS.BUTTON_B,
+      9: BUTTONS.BUTTON_START, 8: BUTTONS.BUTTON_SELECT,
+    };
+
+    function pollGamepad() {
+      const gp = navigator.getGamepads()[0];
+      if (gp) {
+        gp.buttons.forEach((button, index) => {
+          const nesButton = GAMEPAD_MAP[index];
+          if (nesButton !== undefined) {
+            if (button.pressed) nes.buttonDown(1, nesButton);
+            else nes.buttonUp(1, nesButton);
+          }
+        });
+      }
+      requestAnimationFrame(pollGamepad);
+    }
+
+    window.addEventListener("gamepadconnected", pollGamepad);
+  </script>
+</body>
+</html>
