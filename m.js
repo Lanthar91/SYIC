@@ -1,9 +1,9 @@
-(function() {
+(function () {
   'use strict';
 
   Lampa.Listener.follow('app', function(e) {
     if (e.type == 'ready') {
-      let canvas = document.createElement('canvas');
+      const canvas = document.createElement('canvas');
       canvas.width = 256;
       canvas.height = 240;
       canvas.style.position = 'fixed';
@@ -13,16 +13,21 @@
       canvas.style.zIndex = 9999;
       document.body.appendChild(canvas);
 
-      let context = canvas.getContext('2d');
+      const context = canvas.getContext('2d');
 
-      let script = document.createElement('script');
-      script.src = 'https://unpkg.com/jsnes@0.7.0/dist/jsnes.min.js';
-      document.head.appendChild(script);
+      // Загружаем jsnes асинхронно
+      const loadScript = (url) => new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
 
-      script.onload = function() {
-        let nes = new jsnes.NES({
+      loadScript('https://unpkg.com/jsnes@0.7.0/dist/jsnes.min.js').then(() => {
+        const nes = new jsnes.NES({
           onFrame(frameBuffer) {
-            let imageData = context.getImageData(0, 0, 256, 240);
+            const imageData = context.getImageData(0, 0, 256, 240);
             for (let i = 0; i < frameBuffer.length; i++) {
               imageData.data[i * 4] = frameBuffer[i] & 0xFF;
               imageData.data[i * 4 + 1] = (frameBuffer[i] >> 8) & 0xFF;
@@ -33,41 +38,42 @@
           }
         });
 
-        // Простая кнопка запуска ROM
-        let btn = document.createElement('div');
-        btn.textContent = '▶️ Запустить Mario';
-        btn.style.position = 'fixed';
-        btn.style.bottom = '20px';
-        btn.style.left = '50%';
-        btn.style.transform = 'translateX(-50%)';
-        btn.style.padding = '10px';
-        btn.style.background = 'rgba(0,0,0,0.7)';
-        btn.style.color = 'white';
-        btn.style.borderRadius = '8px';
-        btn.style.cursor = 'pointer';
-        btn.style.zIndex = 10000;
+        // UI через встроенные компоненты Lampa (Explorer)
+        const files = [
+          { title: 'Super Mario Bros.', url: 'https://<твой-хостинг>/mario.nes' },
+          { title: 'Contra', url: 'https://<твой-хостинг>/contra.nes' },
+        ];
 
-        document.body.appendChild(btn);
+        const items = files.map(file => ({
+          title: file.title,
+          url: file.url,
+        }));
 
-        btn.onclick = function() {
-          fetch('https://<твоя-ссылка-на-rom>/mario.nes')
-            .then(res => res.arrayBuffer())
-            .then(buffer => {
-              let binary = String.fromCharCode(...new Uint8Array(buffer));
-              nes.loadROM(binary);
+        const explorer = new Lampa.Explorer({
+          items: items,
+          onSelect: (item) => {
+            fetch(item.url)
+              .then(response => response.arrayBuffer())
+              .then(buffer => {
+                const binary = String.fromCharCode(...new Uint8Array(buffer));
+                nes.loadROM(binary);
+                const frameLoop = () => {
+                  nes.frame();
+                  requestAnimationFrame(frameLoop);
+                };
+                frameLoop();
+              })
+              .catch(err => {
+                Lampa.Noty.show('Ошибка загрузки ROM: ' + err.message);
+              });
+          },
+        });
 
-              function frameLoop() {
-                nes.frame();
-                requestAnimationFrame(frameLoop);
-              }
-              frameLoop();
-            })
-            .catch(err => {
-              console.log('Ошибка загрузки ROM:', err);
-              Lampa.Noty.show('Ошибка загрузки ROM');
-            });
-        };
-      };
+        explorer.render(true);
+        explorer.toggle(); // отображаем меню
+      }).catch(err => {
+        Lampa.Noty.show('Ошибка загрузки jsnes: ' + err.message);
+      });
     }
   });
 })();
