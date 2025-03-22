@@ -9,7 +9,6 @@ function startPlugin() {
     Lampa.Listener.follow('app', function(e) {
         if (e.type == 'ready') {
             // Добавление вашего раздела
-          ss
         }
     });
 }
