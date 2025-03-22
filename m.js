@@ -1,9 +1,19 @@
 (function () {
   'use strict';
 
-  // Регистрируем новый компонент в Lampa
   function registerNESPlugin() {
-    Lampa.SettingsApi.addComponent('nes_emulator', function(object){
+    const manifest = {
+      type: 'video',
+      version: '1.0.0',
+      name: 'NES Эмулятор',
+      description: 'Запуск NES игр через jsnes',
+      component: 'nes_emulator'
+    };
+
+    // Вот это критически важная строка!
+    Lampa.Manifest.plugins = manifest;
+
+    Lampa.Component.add('nes_emulator', function(){
       let component = new Lampa.Component();
 
       component.create = function(){
@@ -27,7 +37,7 @@
           document.head.appendChild(script);
         });
 
-        loadScript('https://lanthar.github.io/SYIC/jsnes.js').then(() => {
+        loadScript('https://<твой-ник>.github.io/sycbox/jsnes.js').then(() => {
           const nes = new jsnes.NES({
             onFrame(frameBuffer) {
               const imageData = context.getImageData(0, 0, 256, 240);
@@ -73,16 +83,14 @@
         });
       };
 
-      component.destroy = function(){
-        // Очистка, если потребуется
-      };
+      component.destroy = function(){};
 
       return component;
     });
 
-    // Добавляем компонент в меню Lampa
+    // Добавление пункта в меню
     Lampa.Listener.follow('menu', function(e){
-      if(e.type == 'ready'){
+      if(e.type === 'ready'){
         let menu_item = $(`
           <li class="menu__item selector" data-component="nes_emulator">
             <div class="menu__ico"><span>🎮</span></div>
@@ -104,7 +112,7 @@
 
   if(window.appready) registerNESPlugin();
   else Lampa.Listener.follow('app', function(e){
-    if(e.type == 'ready') registerNESPlugin();
+    if(e.type === 'ready') registerNESPlugin();
   });
 
 })();
