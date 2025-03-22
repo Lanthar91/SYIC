@@ -22,7 +22,7 @@
       document.head.appendChild(script);
     });
 
-    loadScript('https://<lanthar91.github.io/SYIC/jsnes.js').then(() => {
+    loadScript('https://lanthar91.github.io/SYIC/jsnes.js').then(() => {
       const nes = new jsnes.NES({
         onFrame(frameBuffer) {
           const imageData = context.getImageData(0, 0, 256, 240);
@@ -37,7 +37,7 @@
       });
 
       const files = [
-        { title: 'Super Mario Bros.', url: 'lanthar91.github.io/SYIC/roms/mario.nes' },
+        { title: 'Super Mario Bros.', url: 'https://lanthar91.github.io/roms/mario.nes' },
         { title: 'Contra', url: 'https://<твой-хостинг>/contra.nes' },
       ];
 
@@ -73,22 +73,28 @@
     });
   }
 
-  // Создание пункта меню в Lampa
+  // Используем стандартные подходы Lampa для добавления элемента в меню
   Lampa.Listener.follow('menu', function(e) {
-    if (e.type === 'ready') {
-      const menu_item = $('<li class="menu__item selector"><div class="menu__ico"><span>🎮</span></div><div class="menu__text">NES Эмулятор</div></li>');
+    if (e.type == 'ready') {
+      // Корректное создание элемента меню по аналогии с IPTV
+      let menuItem = $('<li class="menu__item selector" data-action="nes_emulator">' +
+                          '<div class="menu__ico"><span>🎮</span></div>' +
+                          '<div class="menu__text">NES Эмулятор</div>' +
+                       '</li>');
 
-      menu_item.on('hover:enter', () => {
+      menuItem.on('hover:enter', () => {
         Lampa.Activity.push({
+          url: '',
           title: 'NES Эмулятор',
           component: {
             create: () => { startPlugin(); },
-            destroy: () => { /* можно что-то очищать при выходе */ },
+            destroy: () => {},
           }
         });
       });
 
-      e.data.body.append(menu_item);
+      // Добавляем элемент меню через правильный API
+      e.data.body.append(menuItem);
     }
   });
 })();
