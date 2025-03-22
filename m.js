@@ -12,7 +12,6 @@
 
     // Вот это критически важная строка!
     Lampa.Manifest.plugins = manifest;
-    Lampa.Component.add('iptv', Component);
     Lampa.Component.add('nes_emulator', function(){
       let component = new Lampa.Component();
 
