@@ -1,79 +1,94 @@
 (function () {
   'use strict';
 
-  Lampa.Listener.follow('app', function(e) {
-    if (e.type == 'ready') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 240;
-      canvas.style.position = 'fixed';
-      canvas.style.top = '50%';
-      canvas.style.left = '50%';
-      canvas.style.transform = 'translate(-50%, -50%)';
-      canvas.style.zIndex = 9999;
-      document.body.appendChild(canvas);
+  function startPlugin() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 240;
+    canvas.style.position = 'fixed';
+    canvas.style.top = '50%';
+    canvas.style.left = '50%';
+    canvas.style.transform = 'translate(-50%, -50%)';
+    canvas.style.zIndex = 9999;
+    document.body.appendChild(canvas);
 
-      const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d');
 
-      // Загружаем jsnes асинхронно
-      const loadScript = (url) => new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = url;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
+    const loadScript = (url) => new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+
+    loadScript('https://<lanthar91.github.io/SYIC/jsnes.js').then(() => {
+      const nes = new jsnes.NES({
+        onFrame(frameBuffer) {
+          const imageData = context.getImageData(0, 0, 256, 240);
+          for (let i = 0; i < frameBuffer.length; i++) {
+            imageData.data[i * 4] = frameBuffer[i] & 0xFF;
+            imageData.data[i * 4 + 1] = (frameBuffer[i] >> 8) & 0xFF;
+            imageData.data[i * 4 + 2] = (frameBuffer[i] >> 16) & 0xFF;
+            imageData.data[i * 4 + 3] = 0xFF;
+          }
+          context.putImageData(imageData, 0, 0);
+        }
       });
 
-      loadScript('https://lanthar91.github.io/SYIC/jsnes.js').then(() => {
-        const nes = new jsnes.NES({
-          onFrame(frameBuffer) {
-            const imageData = context.getImageData(0, 0, 256, 240);
-            for (let i = 0; i < frameBuffer.length; i++) {
-              imageData.data[i * 4] = frameBuffer[i] & 0xFF;
-              imageData.data[i * 4 + 1] = (frameBuffer[i] >> 8) & 0xFF;
-              imageData.data[i * 4 + 2] = (frameBuffer[i] >> 16) & 0xFF;
-              imageData.data[i * 4 + 3] = 0xFF;
-            }
-            context.putImageData(imageData, 0, 0);
+      const files = [
+        { title: 'Super Mario Bros.', url: 'lanthar91.github.io/SYIC/roms/mario.nes' },
+        { title: 'Contra', url: 'https://<твой-хостинг>/contra.nes' },
+      ];
+
+      const items = files.map(file => ({
+        title: file.title,
+        url: file.url,
+      }));
+
+      const explorer = new Lampa.Explorer({
+        items: items,
+        onSelect: (item) => {
+          fetch(item.url)
+            .then(response => response.arrayBuffer())
+            .then(buffer => {
+              const binary = String.fromCharCode(...new Uint8Array(buffer));
+              nes.loadROM(binary);
+              const frameLoop = () => {
+                nes.frame();
+                requestAnimationFrame(frameLoop);
+              };
+              frameLoop();
+            })
+            .catch(err => {
+              Lampa.Noty.show('Ошибка загрузки ROM: ' + err.message);
+            });
+        },
+      });
+
+      explorer.render(true);
+      explorer.toggle();
+    }).catch(err => {
+      Lampa.Noty.show('Ошибка загрузки jsnes: ' + err.message);
+    });
+  }
+
+  // Создание пункта меню в Lampa
+  Lampa.Listener.follow('menu', function(e) {
+    if (e.type === 'ready') {
+      const menu_item = $('<li class="menu__item selector"><div class="menu__ico"><span>🎮</span></div><div class="menu__text">NES Эмулятор</div></li>');
+
+      menu_item.on('hover:enter', () => {
+        Lampa.Activity.push({
+          title: 'NES Эмулятор',
+          component: {
+            create: () => { startPlugin(); },
+            destroy: () => { /* можно что-то очищать при выходе */ },
           }
         });
-
-        // UI через встроенные компоненты Lampa (Explorer)
-        const files = [
-          { title: 'Super Mario Bros.', url: 'https://<твой-хостинг>/mario.nes' },
-          { title: 'Contra', url: 'https://<твой-хостинг>/contra.nes' },
-        ];
-
-        const items = files.map(file => ({
-          title: file.title,
-          url: file.url,
-        }));
-
-        const explorer = new Lampa.Explorer({
-          items: items,
-          onSelect: (item) => {
-            fetch(item.url)
-              .then(response => response.arrayBuffer())
-              .then(buffer => {
-                const binary = String.fromCharCode(...new Uint8Array(buffer));
-                nes.loadROM(binary);
-                const frameLoop = () => {
-                  nes.frame();
-                  requestAnimationFrame(frameLoop);
-                };
-                frameLoop();
-              })
-              .catch(err => {
-                Lampa.Noty.show('Ошибка загрузки ROM: ' + err.message);
-              });
-          },
-        });
-
-        explorer.render(true);
-        explorer.toggle(); // отображаем меню
-      }).catch(err => {
-        Lampa.Noty.show('Ошибка загрузки jsnes: ' + err.message);
       });
+
+      e.data.body.append(menu_item);
     }
   });
 })();
