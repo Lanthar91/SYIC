@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-
+    var network = new Lampa.Reguest();
   function startPlugin() {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
