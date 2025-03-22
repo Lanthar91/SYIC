@@ -3,7 +3,7 @@
 
   // Регистрируем новый компонент в Lampa
   function registerNESPlugin() {
-    Lampa.Component.add('nes_emulator', function(object){
+    Lampa.SettingsApi.addComponent('nes_emulator', function(object){
       let component = new Lampa.Component();
 
       component.create = function(){
