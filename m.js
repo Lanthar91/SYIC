@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  function registerNESPlugin() {
+  function startPlugin() {
     const manifest = {
       type: 'video',
       version: '1.0.0',
