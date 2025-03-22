@@ -52,7 +52,6 @@
 
           const files = [
             { title: 'Super Mario Bros.', url: 'https://lanthar91.github.io/SYIC/roms/mario.nes' },
-            { title: 'Contra', url: 'https://<твой-хостинг>/contra.nes' },
           ];
 
           const explorer = new Lampa.Explorer({
