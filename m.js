@@ -24,7 +24,7 @@
         document.head.appendChild(script);
       });
 
-      loadScript('https://lanthar91.github.io/sycbox/jsnes.js').then(() => {
+      loadScript('https://lanthar91.github.io/SYIC/jsnes.js').then(() => {
         const nes = new jsnes.NES({
           onFrame(frameBuffer) {
             const imageData = context.getImageData(0, 0, 256, 240);
