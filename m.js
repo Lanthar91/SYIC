@@ -1,6 +1,21 @@
 (function () {
   'use strict';
+function startPlugin() {
+        var manifest = {
+            type: 'video',
+            version: '0.4.0',
+            name: 'Кинопоиск',
+            description: '',
+            component: 'kinopoisk'
+        };
+        Lampa.Manifest.plugins = manifest;
+        Lampa.Component.add('kinopoisk', component);
+        if(Lampa.Storage.get('kinopoisk_access_token', '') !== '' && Lampa.Storage.get('kinopoisk_token_expires', 0) < Date.now()) { // refresh token needed
+            console.log('Kinopoisk', 'Token should be refreshed')
+            getToken(Lampa.Storage.get('kinopoisk_refresh_token', ''), true);
+        }
 
+  
   function registerNESPlugin() {
     const manifest = {
       type: 'video',
