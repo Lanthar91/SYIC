@@ -36,7 +36,7 @@
           document.head.appendChild(script);
         });
 
-        loadScript('https://<твой-ник>.github.io/sycbox/jsnes.js').then(() => {
+        loadScript('https://<lanthar91.github.io/SYIC/jsnes.js').then(() => {
           const nes = new jsnes.NES({
             onFrame(frameBuffer) {
               const imageData = context.getImageData(0, 0, 256, 240);
@@ -51,8 +51,8 @@
           });
 
           const files = [
-            { title: 'Super Mario Bros.', url: 'https://<твой-хостинг>/mario.nes' },
-            { title: 'Contra', url: 'https://<твой-хостинг>/contra.nes' },
+            { title: 'Super Mario Bros.', url: 'https://lanthar91.github.io/roms/mario.nes' },
+            { title: 'Contra', url: 'https://lanthar91.github.io/roms/contra.nes' },
           ];
 
           const explorer = new Lampa.Explorer({
